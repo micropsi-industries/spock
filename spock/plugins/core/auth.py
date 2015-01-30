@@ -29,7 +29,8 @@ class AuthCore:
 		self.username = None
 		self.selected_profile = None
 		self.shared_secret = None
-		self.ygg = yggdrasil.YggAuth()
+		if self.authenticated:
+			self.ygg = yggdrasil.YggAuth()
 
 	def start_session(self, username, password = ''):
 		rep = {}
