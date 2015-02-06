@@ -2,8 +2,8 @@
 Registers timers to provide the necessary tick rates expected by MC servers
 """
 
-CLIENT_TICK_RATE = 1
-PHYSICS_TICK_RATE = 0.5
+CLIENT_TICK_RATE = 0.5
+PHYSICS_TICK_RATE = 0.2
 
 class TickerPlugin:
 	def __init__(self, ploader, settings):
