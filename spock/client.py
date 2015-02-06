@@ -22,7 +22,9 @@ class PluginLoader:
 		self.reg_event_handler = event.reg_event_handler if event else None
 		while self.plugins:
 			plugin = self.plugins.pop()
-			plugin(self, self.plugin_settings.get(plugin, None))
+			if plugin.__name__ not in self.extensions:
+				obj = plugin(self, self.plugin_settings.get(plugin, None))
+				self.extensions[obj.__class__.__name__] = obj
 
 	def requires(self, ident):
 		if ident not in self.extensions:
