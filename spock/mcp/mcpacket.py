@@ -61,9 +61,13 @@ class Packet(object):
 			if pbuff.flush():
 				raise utils.BufferUnderflowException
 		except utils.BufferUnderflowException:
-			print('Packet decode failed')
-			print('Failed packet ident is probably:', self.str_ident)
-			return None
+			if self.ident and self.ident == (3, 0, 10):
+				# use bed seems corrupt. doesn't matter
+				return self
+			else:
+				print('Packet decode failed')
+				print('Failed packet ident is probably:', self.str_ident)
+				return None
 		return self
 
 	def encode(self, proto_comp_state, proto_comp_threshold, comp_level = 6):
