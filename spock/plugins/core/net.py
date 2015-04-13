@@ -67,6 +67,11 @@ class NetCore:
 		self.host = None
 		self.port = None
 		self.createSocket()
+		self.queue = []
+
+	def tick(self):
+		if len(self.queue):
+			self.push(self.queue.pop(0))
 
 	def createSocket(self):
 		self.sock = SelectSocket(self.timer)
@@ -103,6 +108,11 @@ class NetCore:
 			self.comp_state = mcdata.PROTO_COMP_ON
 
 	def push(self, packet):
+		if self.proto_state != packet.ident[0]:
+			# play-state package during reconnect, stash for later use, if not keepAlive or Position:
+			if packet.ident[2] not in [0,6]:
+				self.queue.append(packet)
+			return
 		data = packet.encode(self.comp_state, self.comp_threshold)
 		self.sbuff += (self.cipher.encrypt(data) if self.encrypted else data)
 		self.event.emit(packet.ident, packet)
@@ -182,6 +192,7 @@ class NetPlugin:
 		if self.net.connected:
 			for flag in self.net.sock.poll():
 				self.event.emit(flag)
+			self.net.tick()
 
 	#SOCKET_RECV - Socket is ready to recieve data
 	def handleRECV(self, name, data):
