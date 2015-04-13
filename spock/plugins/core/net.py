@@ -57,15 +57,19 @@ class SelectSocket:
 
 	def reset(self):
 		self.sock.close()
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.sock.setblocking(False)
+		# self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		# self.sock.setblocking(False)
 
 class NetCore:
-	def __init__(self, sock, event):
-		self.sock = sock
+	def __init__(self, event, timer):
+		self.timer = timer
 		self.event = event
 		self.host = None
 		self.port = None
+		self.createSocket()
+
+	def createSocket(self):
+		self.sock = SelectSocket(self.timer)
 		self.connected = False
 		self.encrypted = False
 		self.proto_state = mcdata.HANDSHAKE_STATE
@@ -84,6 +88,7 @@ class NetCore:
 			self.sock.sock.connect((self.host, self.port))
 			self.sock.sock.setblocking(False)
 			self.connected = True
+			self.event.emit('connect', [self.host, self.port])
 			print("Connected to host:", host, "port:", port)
 		except socket.error as error:
 			print("Error on Connect:", str(error))
@@ -129,8 +134,13 @@ class NetCore:
 
 	def reset(self):
 		self.connected = False
-		self.sock.reset()
-		self.__init__(self.sock, self.event)
+		if self.sock:
+			self.sock.reset()
+			self.sock = None #.reset()
+
+	def restart(self):
+		print("NET RESTART")
+		self.createSocket()
 
 	disconnect = reset
 
@@ -141,8 +151,8 @@ class NetPlugin:
 		self.bufsize = settings['bufsize']
 		self.sock_quit = settings['sock_quit']
 		self.event = ploader.requires('Event')
-		self.sock = SelectSocket(ploader.requires('Timers'))
-		self.net = NetCore(self.sock, self.event)
+		self.timers = ploader.requires('Timers')
+		self.net = NetCore(self.event, self.timers)
 		ploader.provides('Net', self.net)
 
 		ploader.reg_event_handler('event_tick', self.tick)
@@ -169,13 +179,14 @@ class NetPlugin:
 		)
 
 	def tick(self, name, data):
-		for flag in self.sock.poll():
-			self.event.emit(flag)
+		if self.net.connected:
+			for flag in self.net.sock.poll():
+				self.event.emit(flag)
 
 	#SOCKET_RECV - Socket is ready to recieve data
 	def handleRECV(self, name, data):
 		try:
-			data = self.sock.recv(self.bufsize)
+			data = self.net.sock.recv(self.bufsize)
 			#print('read:', len(data))
 			if not data: #Just because we have to support socket.select
 				self.event.emit('SOCKET_HUP')
@@ -188,7 +199,7 @@ class NetPlugin:
 	#SOCKET_SEND - Socket is ready to send data and Send buffer contains data to send
 	def handleSEND(self, name, data):
 		try:
-			sent = self.sock.send(self.net.sbuff)
+			sent = self.net.sock.send(self.net.sbuff)
 			self.net.sbuff = self.net.sbuff[sent:]
 			if self.net.sbuff:
 				self.sending = True
@@ -209,7 +220,7 @@ class NetPlugin:
 		if self.sock_quit and not self.event.kill_event:
 			print("Socket has hung up, stopping...")
 			self.event.emit('disconnect', "Socket Hung Up")
-			self.event.kill()
+			# self.event.kill()
 		self.net.reset()
 
 	#Handshake - Change to whatever the next state is going to be
