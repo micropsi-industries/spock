@@ -95,8 +95,10 @@ class NetCore:
 			self.connected = True
 			self.event.emit('connect', [self.host, self.port])
 			print("Connected to host:", host, "port:", port)
+			return True
 		except socket.error as error:
 			print("Error on Connect:", str(error))
+			return False
 
 	def set_proto_state(self, state):
 		self.proto_state = state
@@ -149,7 +151,7 @@ class NetCore:
 			self.sock = None #.reset()
 
 	def restart(self):
-		print("NET RESTART")
+		self.connected = False
 		self.createSocket()
 
 	disconnect = reset

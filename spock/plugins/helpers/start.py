@@ -24,10 +24,11 @@ class StartPlugin:
 			self.settings['mc_username'],
 			self.settings['mc_password']
 		):
-			self.net.connect(host, port)
-			self.handshake()
-			self.login_start()
-			self.event.event_loop()
+			result = self.net.connect(host, port)
+			if result:
+				self.handshake()
+				self.login_start()
+				self.event.event_loop()
 
 	def handshake(self):
 		self.net.push(mcpacket.Packet(
