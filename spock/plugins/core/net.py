@@ -233,7 +233,7 @@ class NetPlugin:
 		if self.sock_quit and not self.event.kill_event:
 			print("Socket has hung up, stopping...")
 			self.event.emit('disconnect', "Socket Hung Up")
-			# self.event.kill()
+			self.event.kill()
 		self.net.reset()
 
 	#Handshake - Change to whatever the next state is going to be
